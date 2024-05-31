@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package artie_distances;
+
+message Field {
+    string name = 1;
+    string value = 2;
+}
+
+message Input {
+    string name = 1;
+    string code = 2;
+    repeated Field fields = 3;
+}
+
+message Block {
+  string id = 1;
+  string name = 2;
+  string family = 3;
+  repeated Input inputs = 4;
+  Block next = 5;
+  repeated Block nested = 6;
+}
+
+message Workspace {
+    string id = 1;
+    string name = 2;
+    repeated Block blocks = 3;
+}
+
+message BlockChange {
+    string id = 1;
+    string name = 2;    
+}
+
+message BlockPositionChange {
+  BlockChange block = 1;
+  repeated uint32 current_position = 2; // Current position in the student's workspace.
+  repeated uint32 target_position = 3;   // Target correct position.
+}
+
+message InputChange {
+    string block_id = 1;
+    string input_name = 2;
+    string expected_value = 3;
+    string actual_value = 4;
+}
+
+message WorkspaceAdjustments {
+    repeated BlockChange blocks_to_remove = 1;
+    repeated BlockChange blocks_to_add = 2;
+    repeated BlockPositionChange blocks_to_reposition = 3;
+    repeated InputChange blocks_with_input_changes = 4;
+}
+
+message ArtieDistance {
+    double family_distance = 1;
+    double block_distance = 2;
+    double position_distance = 3;
+    double input_distance = 4;
+    double total_distance = 5;
+    WorkspaceAdjustments workspace_adjustments = 6;
+}
+
+service ArtieCommonService {
+    rpc DistanceCalculation(DistanceRequest) returns (ArtieDistance) {}
+}
+
+message DistanceRequest {
+    Workspace workspace = 1;
+    Workspace solution = 2;
+}
