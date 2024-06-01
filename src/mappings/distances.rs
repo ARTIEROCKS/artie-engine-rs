@@ -1,7 +1,8 @@
+use artie_common::structure::{Workspace, Block, Input, Field, ArtieDistance};
 use crate::pb::artie_distances::{
     Workspace as GrpcWorkspace, Block as GrpcBlock, Input as GrpcInput, Field as GrpcField,
+    ArtieDistance as GrpcArtieDistance,
 };
-use artie_common::structure::{Workspace, Block, Input, Field};
 
 // Implement conversion from GrpcWorkspace to internal Workspace
 impl From<GrpcField> for Field {
@@ -88,6 +89,21 @@ impl From<Workspace> for GrpcWorkspace {
             id: workspace.id,
             name: workspace.name,
             blocks: workspace.blocks.into_iter().map(GrpcBlock::from).collect(),
+        }
+    }
+}
+
+
+// TODO: Implement the workspace_adjustments conversion
+impl From<ArtieDistance> for GrpcArtieDistance {
+    fn from(artie_distance: ArtieDistance) -> Self {
+        GrpcArtieDistance {
+            family_distance: artie_distance.family_distance,
+            block_distance: artie_distance.block_distance,
+            position_distance: artie_distance.position_distance,
+            input_distance: artie_distance.input_distance,
+            total_distance: artie_distance.total_distance,
+            workspace_adjustments: None,
         }
     }
 }
