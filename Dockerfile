@@ -1,5 +1,8 @@
-# Build stage
-FROM rust:1.60 as builder
+# Use Rust 1.70 as the builder image
+FROM rust:1.70 as builder
+
+# Install protobuf-compiler
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --assume-yes protobuf-compiler libprotobuf-dev
 
 # Set the working directory
 WORKDIR /usr/src/artie-engine-rs
