@@ -19,7 +19,9 @@ message Block {
   string family = 3;
   repeated Input inputs = 4;
   Block next = 5;
-  repeated Block nested = 6;
+  Block previous = 6;
+  Block parent = 7;
+  repeated Block nested = 8;
 }
 
 message Workspace {

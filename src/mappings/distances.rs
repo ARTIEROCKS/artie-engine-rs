@@ -1,7 +1,9 @@
-use artie_common::structure::{Workspace, Block, Input, Field, ArtieDistance};
+use artie_common::structure::{hint::{BlockChange, BlockPositionChange, InputChange, WorkspaceAdjustments}, ArtieDistance, Block, Field, Input, Workspace};
 use crate::pb::artie_distances::{
     Workspace as GrpcWorkspace, Block as GrpcBlock, Input as GrpcInput, Field as GrpcField,
     ArtieDistance as GrpcArtieDistance,
+    BlockChange as GrpcBlockChange, BlockPositionChange as GrpcBlockPositionChange, InputChange as GrpcInputChange,
+    WorkspaceAdjustments as GrpcWorkspaceAdjustments,
 };
 
 // Implement conversion from GrpcWorkspace to internal Workspace
@@ -78,6 +80,8 @@ impl From<Block> for GrpcBlock {
             family: block.family,
             inputs: block.inputs.into_iter().map(GrpcInput::from).collect(),
             next: block.next.map(|b| Box::new(GrpcBlock::from(*b))),
+            previous: block.previous.map(|b| Box::new(GrpcBlock::from(*b))),
+            parent: block.parent.map(|b| Box::new(GrpcBlock::from(*b))),
             nested: block.nested.into_iter().map(GrpcBlock::from).collect(),
         }
     }
@@ -95,6 +99,47 @@ impl From<Workspace> for GrpcWorkspace {
 
 
 // TODO: Implement the workspace_adjustments conversion
+impl From<BlockChange> for GrpcBlockChange {
+    fn from(block_change: BlockChange) -> Self {
+        GrpcBlockChange {
+            id: block_change.id,
+            name: block_change.name,
+        }
+    }
+}
+
+impl From<BlockPositionChange> for GrpcBlockPositionChange {
+    fn from(block_position_change: BlockPositionChange) -> Self {
+        GrpcBlockPositionChange {
+            block: Some(GrpcBlockChange::from(block_position_change.block)),
+            current_position: block_position_change.current_position.into_iter().map(|x| x as u32).collect(),
+            target_position: block_position_change.target_position.into_iter().map(|x| x as u32).collect(),
+        }
+    }
+}
+
+impl From<InputChange> for GrpcInputChange {
+    fn from(input_change: InputChange) -> Self {
+        GrpcInputChange {
+            block_id: input_change.block_id,
+            input_name: input_change.input_name,
+            expected_value: input_change.expected_value,
+            actual_value: input_change.actual_value,
+        }
+    }
+}
+
+impl From<WorkspaceAdjustments> for GrpcWorkspaceAdjustments {
+    fn from(workspace_adjustments: WorkspaceAdjustments) -> Self {
+        GrpcWorkspaceAdjustments {
+            blocks_to_remove: workspace_adjustments.blocks_to_remove.into_iter().map(GrpcBlockChange::from).collect(),
+            blocks_to_add: workspace_adjustments.blocks_to_add.into_iter().map(GrpcBlockChange::from).collect(),
+            blocks_to_reposition: workspace_adjustments.blocks_to_reposition.into_iter().map(GrpcBlockPositionChange::from).collect(),
+            blocks_with_input_changes: workspace_adjustments.blocks_with_input_changes.into_iter().map(GrpcInputChange::from).collect(),
+        }
+    }
+}
+
 impl From<ArtieDistance> for GrpcArtieDistance {
     fn from(artie_distance: ArtieDistance) -> Self {
         GrpcArtieDistance {
@@ -103,7 +148,7 @@ impl From<ArtieDistance> for GrpcArtieDistance {
             position_distance: artie_distance.position_distance,
             input_distance: artie_distance.input_distance,
             total_distance: artie_distance.total_distance,
-            workspace_adjustments: None,
+            workspace_adjustments: Some(GrpcWorkspaceAdjustments::from(artie_distance.workspace_adjustments)),
         }
     }
 }
