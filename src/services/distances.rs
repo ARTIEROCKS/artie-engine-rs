@@ -1,4 +1,8 @@
+use artie_common::structure::Workspace;
+use artie_common::operations::artie_distance::artie_distance;
 use tonic::{Request, Response, Status};
+
+
 use crate::pb::artie_distances::{
     artie_common_service_server::ArtieCommonService,
     ArtieDistance, DistanceRequest,
@@ -19,18 +23,21 @@ impl ArtieCommonService for MyArtieCommonService {
         &self,
         request: Request<DistanceRequest>,
     ) -> Result<Response<ArtieDistance>, Status> {
-        let _req = request.into_inner();
 
-        // Placeholder for actual logic
-        let response = ArtieDistance {
-            family_distance: 0.0,
-            block_distance: 0.0,
-            position_distance: 0.0,
-            input_distance: 0.0,
-            total_distance: 0.0,
-            workspace_adjustments: None, // Adjust as per your proto definition
+        let req = request.into_inner();
+
+        let workspace: Workspace = match req.workspace {
+            Some(ws) => ws.into(),
+            None => return Err(Status::invalid_argument("workspace is missing")),
         };
 
-        Ok(Response::new(response))
+        let solution: Workspace = match req.solution {
+            Some(sol) => sol.into(),
+            None => return Err(Status::invalid_argument("solution is missing")),
+        };
+
+        let artie_distance: ArtieDistance = artie_distance(&workspace, &solution).into();
+
+        Ok(Response::new(artie_distance))
     }
 }
