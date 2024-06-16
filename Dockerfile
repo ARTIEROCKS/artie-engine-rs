@@ -1,30 +1,49 @@
-# Use Rust 1.70 as the builder image
-FROM rust:1.70 as builder
+# Use the official Rust image as the base for the builder stage
+FROM rust:1.71 as builder
 
-# Install protobuf-compiler
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --assume-yes protobuf-compiler libprotobuf-dev
+# Install protoc (Protocol Buffers compiler)
+RUN apt-get update && apt-get install -y protobuf-compiler
 
 # Set the working directory
 WORKDIR /usr/src/artie-engine-rs
 
-# Copy the configuration files and dependencies
-COPY Cargo.toml .
-COPY Cargo.lock .
+# Copy the Cargo.toml and Cargo.lock files
+COPY Cargo.toml Cargo.lock ./
 
-# Copy the project files
+# Create an empty directory for build dependencies
+RUN mkdir src
+RUN echo "fn main() {}" > src/main.rs
+
+# Compile the dependencies
+RUN cargo build --release
+RUN rm -r src
+
+# Copy the rest of the project files
 COPY . .
 
-# Build the project
+# Compile the project
 RUN cargo build --release
 
-# Final stage
-FROM debian:buster-slim
+# Create a new stage for a runtime image with necessary libraries
+FROM ubuntu:20.04
 
-# Copy the built binary from the build stage
-COPY --from=builder /usr/src/artie-engine-rs/target/release/artie-engine-rs /usr/local/bin/artie-engine-rs
+# Install necessary dependencies to run the binary
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Set the entry point
-ENTRYPOINT ["artie-engine-rs"]
+# Set the working directory
+WORKDIR /usr/local/bin
 
-# Expose the gRPC port
+# Copy the compiled binary from the builder stage
+COPY --from=builder /usr/src/artie-engine-rs/target/release/artie-engine-rs .
+
+# Expose the port where the gRPC service will be listening
 EXPOSE 50051
+
+# Set environment variables
+ENV RUST_LOG=debug
+
+# Command to run the binary
+CMD ["./artie-engine-rs"]
