@@ -1,4 +1,7 @@
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tonic_build::compile_protos("proto/artie_distances.proto")?;
-    Ok(())
+fn main() {
+    tonic_build::configure()
+        .build_server(true)
+        .file_descriptor_set_path("proto/artie_engine.bin") 
+        .compile(&["proto/artie_distances.proto"], &["proto"])
+        .unwrap();
 }
